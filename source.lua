@@ -115,7 +115,8 @@ local games = {
                 JumpPowerB = false,
                 InfiniteJump = false,
                 LeaveDelay = 0,
-                Leave = false
+                Leave = false,
+                NewFloor = nil
             },
             Game = {
                 KillAura = false,
@@ -444,6 +445,11 @@ if services.Game then
         local Modules;
         local RPCKey;
         local Mobs_ = {'None'}
+        local floors = {}
+        
+        for i,v in ipairs(services.Game.Settings.Floors) do
+            floors[i] = v.Name
+        end
 
         for _, v in pairs(getgc(true)) do
             if type(v) == 'table' then
@@ -503,7 +509,7 @@ if services.Game then
             Text = 'Mob Distance',
             Default = 0,
             Min = 0,
-            Max = 25,
+            Max = 21,
             Rounding = 0,
             Compact = false
         })
@@ -580,6 +586,24 @@ if services.Game then
                 hrp.CFrame = pos
             end
         end)
+        services.Tabs.Local.Boxes.Player:AddDropdown('Floors', {
+            Values = floors,
+            Text = 'Floors',
+            Default = 1,
+            Multi = false
+        })
+        services.Tabs.Local.Boxes.Player:AddButton('Teleport', function()
+            if services.Settings.Local.NewFloor then
+                for _, floor in pairs(services.Game.Settings.Floors) do
+                    if floor.Name == services.Settings.Local.NewFloor then
+                        local profile = ReplicatedStorage.Profiles:WaitForChild(plr.Name)
+                        if profile.Locations:FindFirstChild(floor.PlaceId) then
+                            game.ReplicatedStorage.Function:InvokeServer("Teleport", {"Teleport", floor.PlaceId})
+                        end
+                    end
+                end
+            end
+        end)
         services.Tabs.Local.Boxes.Admin:AddToggle('Leave', {
             Text = 'Leave On Join',
             Default = false,
@@ -637,6 +661,9 @@ if services.Game then
         end)
         Options.LeaveDelay:OnChanged(function()
             services.Settings.Local.LeaveDelay = Options.LeaveDelay.Value
+        end)
+        Options.Floors:OnChanged(function()
+            services.Settings.Local.NewFloor = Options.Floors.Value
         end)
 
         Players.PlayerAdded:Connect(function(Player)
