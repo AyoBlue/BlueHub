@@ -588,7 +588,7 @@ if services.Game then
         services.Tabs.Local.Boxes.Admin:AddSlider('LeaveDelay', {
             Text = 'Leave Delay',
             Default = 0,
-            Min = 5,
+            Min = 0,
             Max = 5,
             Rounding = 0,
             Compact = false
