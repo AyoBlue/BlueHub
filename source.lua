@@ -587,8 +587,11 @@ if services.Game then
         })
         services.Tabs.Local.Boxes.Admin:AddSlider('LeaveDelay', {
             Text = 'Leave Delay',
-            Default = false,
-            Tooltip = 'How many seconds before you leave!'
+            Default = 0,
+            Min = 5,
+            Max = 5,
+            Rounding = 0,
+            Compact = false
         })
         Toggles.ToggleMob:OnChanged(function()
             services.Settings.Game.ToggleMob = Toggles.ToggleMob.Value
