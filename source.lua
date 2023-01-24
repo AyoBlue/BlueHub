@@ -438,7 +438,7 @@ if services.Tabs.Visuals then
 end
 
 if services.Game then
-    print('Connected Game: ', services.Game.Name)
+    print('Connected Game:', services.Game.Name)
     if services.Game.Name == 'Swordburst 2' then
         local isinvisible = false
         local meta_ = {}
@@ -446,6 +446,7 @@ if services.Game then
         local RPCKey;
         local Mobs_ = {'None'}
         local floors = {}
+        local Cooldown = {}
         
         for i,v in ipairs(services.Game.Settings.Floors) do
             floors[i] = v.Name
@@ -573,6 +574,8 @@ if services.Game then
         services.Tabs.Local.Boxes.Player:AddButton('Invisible', function()
             local Character = plr.Character
             if Character and Character:FindFirstChild('HumanoidRootPart') then
+                plr.Character.Archivable = true
+                local oldhumanoid = plr.Character:Clone()
                 local hrp = Character.HumanoidRootPart
                 local root = Character.LowerTorso.Root:Clone()
                 local pos = hrp.CFrame
@@ -584,6 +587,15 @@ if services.Game then
                 task.wait(0.5)
                 root.Parent = Character.LowerTorso
                 hrp.CFrame = pos
+
+                oldhumanoid.Parent = game.Workspace
+                oldhumanoid.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame
+                oldhumanoid.HumanoidRootPart.Anchored = true
+                for _, obj in pairs(oldhumanoid:GetDescendants()) do
+                    if obj:IsA('Part') or obj:IsA('MeshPart') then
+                        obj.Transparency = .7
+                    end
+                end
             end
         end)
         services.Tabs.Local.Boxes.Player:AddDropdown('Floors', {
@@ -674,12 +686,16 @@ if services.Game then
             while task.wait() do
                 local target;
                 if plr.Character then
-                    if plr.Character:FindFirstChild('Humanoid') then
+                    if plr.Character:FindFirstChild('Humanoid') and plr.Character:FindFirstChild('HumanoidRootPart') then
                         if services.Settings.Local.WalkSpeedB then
                             plr.Character.Humanoid.WalkSpeed = services.Settings.Local.WalkSpeed
                         end
                         if services.Settings.Local.JumpPowerB then
                             plr.Character.Humanoid.JumpPower = services.Settings.Local.JumpPower
+                        end
+                        if services.Settings.Game.AutoFarm then
+                            plr.Character.HumanoidRootPart.Velocity = Vector3.new()
+                            plr.Character.HumanoidRootPart.RotVelocity = Vector3.new()
                         end
                     end
                 end
@@ -691,22 +707,62 @@ if services.Game then
                         if services.Settings.Game.TargetMob == 'None' or services.Settings.Game.TargetMob == mob.Name then
                             if hrp and newmob and entity and entity:FindFirstChild('Health') and entity.Health.Value > 0 then
                                 if not target then
-                                    target = mob
+                                    if Cooldown[mob] then
+                                        if Cooldown[mob].CanAttack then
+                                            target = mob
+                                        end
+                                    else
+                                        target = mob
+                                    end
                                 else
                                     if target.PrimaryPart then
                                         local x = services.Settings.Functions['FindDistance'](target.PrimaryPart, hrp)
                                         local y = services.Settings.Functions['FindDistance'](newmob, hrp)
                                         if x > y then
-                                            target = mob
+                                            if Cooldown[mob] then
+                                                if Cooldown[mob].CanAttack then
+                                                    target = mob
+                                                end
+                                            else
+                                                target = mob
+                                            end
                                         end
                                     end
                                 end
                             end
                         end
-                        if hrp and newmob and entity and entity:FindFirstChild('Health') and entity.Health.Value > 0 and (hrp.Position - newmob.Position).Magnitude < 30 then
-                            task.spawn(function()
-                                game.ReplicatedStorage.Event:FireServer("Combat", RPCKey, {"Attack", nil, "1", mob}) 
-                            end)
+                        if hrp and services.Settings.Game.KillAura and newmob and entity and entity:FindFirstChild('Health') and entity.Health.Value > 0 and (hrp.Position - newmob.Position).Magnitude < 30 then
+                            if not Cooldown[mob] then
+                                Cooldown[mob] = {
+                                    Cooldown = os.clock(),
+                                    CanAttack = true,
+                                    Attacks = 0,
+                                    Health = entity.Health.Value
+                                }
+                            else
+                                if Cooldown[mob].Health == entity.Health.Value then -- Health Didn't Change bruh.
+                                    if Cooldown[mob].Attacks >= 10 then
+                                        Cooldown[mob].Attacks = 0
+                                        Cooldown[mob].CanAttack = false
+                                        task.spawn(function()
+                                            task.wait(1)
+                                            Cooldown[mob].CanAttack = true
+                                        end)
+                                    else
+                                        Cooldown[mob].Attacks = Cooldown[mob].Attacks + 1
+                                    end
+                                else
+                                    Cooldown[mob].Attacks = 0
+                                    Cooldown[mob].CanAttack = true
+                                end
+                            end
+                            if os.clock() >= Cooldown[mob].Cooldown and Cooldown[mob].CanAttack then
+                                Cooldown[mob].Cooldown =  os.clock() + services.Settings.Game.AttackSpeed
+                                task.spawn(function()
+                                    game.ReplicatedStorage.Event:FireServer("Combat", RPCKey, {"Attack", nil, "1", mob})
+                                    Cooldown[mob].Health = entity.Health.Value
+                                end)
+                            end
                         end
                     end
                 end
