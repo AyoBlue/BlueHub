@@ -447,7 +447,13 @@ if services.Game then
         local Mobs_ = {'None'}
         local floors = {}
         local Cooldown = {}
-        
+        local Profile = ReplicatedStorage.Profiles:WaitForChild(plr.Name)
+        local Vel, XP
+        local SetData = {
+            EXP = Profile.Stats.Exp.Value,
+            Vel = Profile.Stats.Vel.Value
+        }
+
         for i,v in ipairs(services.Game.Settings.Floors) do
             floors[i] = v.Name
         end
@@ -463,6 +469,19 @@ if services.Game then
                 end
             end
         end
+
+        Profile.Stats.Exp.Changed:Connect(function()
+            if XP then
+                local var = Profile.Stats.Exp.Value - SetData.EXP
+                XP:SetText('Gained XP: ' .. var)
+            end
+        end)
+        Profile.Stats.Vel.Changed:Connect(function()
+            if Vel then
+                local var = Profile.Stats.Vel.Value - SetData.Vel
+                Vel:SetText('Gained Vel: ' .. var)
+            end
+        end)
 
         if Modules then
             RPCKey = debug.getupvalues(Modules.Combat.Init, 1)[2]
@@ -484,6 +503,7 @@ if services.Game then
         ----------------------[Main]------------------------
         services.Tabs.Main.Boxes.Farm = services.Tabs.Main.Tab:AddLeftGroupbox('Main')
         services.Tabs.Main.Boxes.Settings = services.Tabs.Main.Tab:AddRightGroupbox('Settings')
+        services.Tabs.Main.Boxes.Logs = services.Tabs.Main.Tab:AddLeftGroupbox('Logs')
 
         services.Tabs.Main.Boxes.Farm:AddDropdown('Mobs', {
             Values = Mobs_,
@@ -536,6 +556,8 @@ if services.Game then
             Default = 1,
             Multi = false
         })
+        Vel = services.Tabs.Main.Boxes.Logs:AddLabel('Gained Vel: ')
+        XP = services.Tabs.Main.Boxes.Logs:AddLabel('Gained XP: ')
         ----------------------[Local]------------------------
         services.Tabs.Local.Boxes.Player = services.Tabs.Local.Tab:AddLeftGroupbox('Local Player')
         services.Tabs.Local.Boxes.Admin = services.Tabs.Local.Tab:AddRightGroupbox('Admins')
