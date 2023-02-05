@@ -450,7 +450,9 @@ if services.Game then
             for _, v in pairs(getgc(true)) do
                 if type(v) == 'table' then
                     local success, key = pcall(function()
-                        return v.Services 
+                        if v.Services and v.Services.Combat then
+                            return v.Services
+                        end
                     end)
                     if success and key then
                         Modules = key
