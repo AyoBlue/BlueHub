@@ -594,6 +594,7 @@ if services.Game then
 
                 hrp.Parent = game.Workspace
                 Character.PrimaryPart = hrp
+                Character:MoveTo(Vector3.new(pos.X, 9e9, pos.Z))
                 hrp.Parent = Character
                 root.Parent = Character.LowerTorso
                 hrp.CFrame = pos
